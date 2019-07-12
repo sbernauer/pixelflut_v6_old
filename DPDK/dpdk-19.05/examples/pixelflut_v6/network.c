@@ -56,9 +56,7 @@ fail:
 int net_listen(struct net* net) {
 	struct fb* fb = net->fb;
 
-	union fb_pixel pixel;
-	pixel.abgr = 0xff00ff;
-	pixel.color.alpha = 0xFF;
+	uint32_t pixel = 0xff00ff;
 
 	for (int x = 100; x < 500; x++) {
 		for (int y = 100; y < 500; y++) {

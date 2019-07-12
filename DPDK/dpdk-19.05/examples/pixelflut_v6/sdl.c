@@ -143,7 +143,7 @@ int sdl_update(struct frontend* front) {
 		}
 	}
 
-	SDL_UpdateTexture(sdl->texture, NULL, sdl->fb->pixels, size->width * sizeof(union fb_pixel));
+	SDL_UpdateTexture(sdl->texture, NULL, sdl->fb->pixels, size->width * sizeof(uint32_t));
 	SDL_RenderCopy(sdl->renderer, sdl->texture, NULL, NULL);
 	SDL_RenderPresent(sdl->renderer);
 
