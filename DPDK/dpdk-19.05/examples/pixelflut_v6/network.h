@@ -46,7 +46,7 @@ struct net_connection_thread {
 #define likely(x)	__builtin_expect((x),1)
 #define unlikely(x)	__builtin_expect((x),0)
 
-int net_alloc(struct net** network, struct fb* fb, struct llist* fb_list, struct fb_size* fb_size);
+int net_alloc(char** argv, struct net** network, struct fb* fb, struct llist* fb_list, struct fb_size* fb_size);
 
 int net_listen(struct net* net);
 void net_shutdown(struct net* net);

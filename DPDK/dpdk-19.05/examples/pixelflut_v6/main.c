@@ -117,6 +117,7 @@ fail:
 }
 
 int main(int argc, char** argv) {
+
 	int err, opt;
 	struct fb* fb;
 	struct llist fb_list;
@@ -257,7 +258,7 @@ int main(int argc, char** argv) {
 		free(frontid);
 	}
 
-	if((err = net_alloc(&net, fb, &fb_list, &fb->size))) {
+	if((err = net_alloc(argv, &net, fb, &fb_list, &fb->size))) {
 		fprintf(stderr, "Failed to initialize network: %d => %s\n", err, strerror(-err));
 		goto fail_fronts;
 	}

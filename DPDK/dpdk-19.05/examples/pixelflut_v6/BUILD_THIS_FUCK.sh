@@ -1,3 +1,4 @@
+rm pixelflut
 rm -rf build
 rm *.o
 
