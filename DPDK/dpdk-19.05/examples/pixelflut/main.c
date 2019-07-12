@@ -33,7 +33,6 @@ static volatile bool force_quit;
 
 static uint16_t port_id;
 static uint16_t nr_queues = 1; // TODO Increase if nic supports it
-static uint8_t selected_queue = 1;
 struct rte_mempool *mbuf_pool;
 struct rte_flow *flow;
 
@@ -41,8 +40,6 @@ struct rte_flow *flow;
 #define DEST_IP ((192<<24) + (168<<16) + (1<<8) + 1) /* dest ip = 192.168.1.1 */
 #define FULL_MASK 0xffffffff /* full mask */
 #define EMPTY_MASK 0x0 /* empty mask */
-
-#include "flow_blocks.c"
 
 static inline void
 print_ether_addr(const char *what, struct ether_addr *eth_addr)
@@ -70,14 +67,10 @@ main_loop(void)
 				for (j = 0; j < nb_rx; j++) {
 					struct rte_mbuf *m = mbufs[j];
 
-					eth_hdr = rte_pktmbuf_mtod(m,
-							struct ether_hdr *);
-					print_ether_addr("src=",
-							&eth_hdr->s_addr);
-					print_ether_addr(" - dst=",
-							&eth_hdr->d_addr);
-					printf(" - queue=0x%x",
-							(unsigned int)i);
+					eth_hdr = rte_pktmbuf_mtod(m, struct ether_hdr *);
+					print_ether_addr("src=", &eth_hdr->s_addr);
+					print_ether_addr(" - dst=", &eth_hdr->d_addr);
+					printf(" - queue=0x%x", (unsigned int)i);
 					printf("\n");
 
 					rte_pktmbuf_free(m);
@@ -207,7 +200,6 @@ main(int argc, char **argv)
 {
 	int ret;
 	uint16_t nr_ports;
-	struct rte_flow_error error;
 
 	ret = rte_eal_init(argc, argv);
 	if (ret < 0)
