@@ -4,7 +4,7 @@
 #include <errno.h>
 #include <assert.h>
 
-#include <SDL.h>
+#include <SDL2/SDL.h>
 
 #include "sdl.h"
 #include "framebuffer.h"

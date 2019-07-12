@@ -1,7 +1,7 @@
 #ifndef _SDL_H_
 #define _SDL_H_
 
-#include <SDL.h>
+#include <SDL2/SDL.h>
 
 #include "framebuffer.h"
 #include "frontend.h"

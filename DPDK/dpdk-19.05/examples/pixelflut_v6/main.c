@@ -326,7 +326,7 @@ int main(int argc, char** argv) {
 
 			sprintf(textualInfo1, "FPS: %d Load: %3.1f %3.1f %3.1f", actualFps, loadAverages[0], loadAverages[1], loadAverages[2]);
 			sprintf(textualInfo2, "%.2f Gb/s %.1f GB received", (double)actualBytesPerS / (1024 * 1024 * 1024) * 8, (double)fb->bytesCounter / 1e9);
-			sprintf(textualInfo3, "%.2f M pixel/s %.1f G pixels", (double)actualPixelPerS / 1e6, (double)fb->pixelCounter / 1e9);
+			sprintf(textualInfo3, "%.2f M pixel/s %.1f k pixels", (double)actualPixelPerS / 1e6, (double)fb->pixelCounter / 1e3);
 
 			fpsSnapshot = after;
 		}
