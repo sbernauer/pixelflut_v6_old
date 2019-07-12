@@ -124,12 +124,15 @@ init_port(void)
 		},
 		.txmode = {
 			.offloads =
-				DEV_TX_OFFLOAD_VLAN_INSERT |
-				DEV_TX_OFFLOAD_IPV4_CKSUM  |
-				DEV_TX_OFFLOAD_UDP_CKSUM   |
-				DEV_TX_OFFLOAD_TCP_CKSUM   |
-				DEV_TX_OFFLOAD_SCTP_CKSUM  |
-				DEV_TX_OFFLOAD_TCP_TSO,
+				// DEV_TX_OFFLOAD_VLAN_INSERT |
+				// DEV_TX_OFFLOAD_IPV4_CKSUM  |
+				// DEV_TX_OFFLOAD_UDP_CKSUM   |
+				// DEV_TX_OFFLOAD_TCP_CKSUM   |
+				// DEV_TX_OFFLOAD_SCTP_CKSUM  |
+				// DEV_TX_OFFLOAD_TCP_TSO     |
+				DEV_RX_OFFLOAD_JUMBO_FRAME |
+				DEV_RX_OFFLOAD_CHECKSUM    |
+				DEV_RX_OFFLOAD_VLAN_STRIP,
 		},
 	};
 	struct rte_eth_txconf txq_conf;
@@ -230,16 +233,7 @@ main(int argc, char **argv)
 
 	init_port();
 
-	// /* create flow for send packet with */
-	// flow = generate_ipv4_flow(port_id, selected_queue,
-	// 			SRC_IP, EMPTY_MASK,
-	// 			DEST_IP, FULL_MASK, &error);
-	// if (!flow) {
-	// 	printf("Flow can't be created %d message: %s\n",
-	// 		error.type,
-	// 		error.message ? error.message : "(no stated reason)");
-	// 	rte_exit(EXIT_FAILURE, "error in creating flow");
-	// }
+	printf("Initialized all ports\n");
 
 	main_loop();
 
