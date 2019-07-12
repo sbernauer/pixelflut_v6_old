@@ -61,6 +61,7 @@ static void assert_link_status(void) {
 		rte_eth_link_get(port_id, &link);
 		if (link.link_status == ETH_LINK_UP)
 			break;
+		printf(":: [WARNING] Link was'nt up for port: %d, retrying %d times left\n", port_id, rep_cnt);
 		rte_delay_ms(CHECK_INTERVAL);
 	} while (--rep_cnt);
 
@@ -74,12 +75,12 @@ static void init_port(void) {
 	struct rte_eth_conf port_conf = {
 		.rxmode = {
 			.split_hdr_size = 0,
-			.mq_mode	= ETH_MQ_RX_RSS,
+			// .mq_mode	= ETH_MQ_RX_RSS,
 			.max_rx_pkt_len = ETHER_MAX_LEN,
-			.offloads =
-				DEV_RX_OFFLOAD_CHECKSUM    |
-				DEV_RX_OFFLOAD_JUMBO_FRAME |
-				DEV_RX_OFFLOAD_VLAN_STRIP,
+			// .offloads =
+			// 	DEV_RX_OFFLOAD_CHECKSUM    |
+			// 	DEV_RX_OFFLOAD_JUMBO_FRAME |
+			// 	DEV_RX_OFFLOAD_VLAN_STRIP,
 		},
 		// .rx_adv_conf = {
 		// 	.rss_conf = {
@@ -105,6 +106,7 @@ static void init_port(void) {
 	rte_eth_dev_info_get(port_id, &dev_info);
 	port_conf.txmode.offloads &= dev_info.tx_offload_capa;
 	printf(":: initializing port: %d\n", port_id);
+	printf(":: configuring port: %d\n", port_id);
 	ret = rte_eth_dev_configure(port_id,
 				nr_queues, nr_queues, &port_conf);
 	if (ret < 0) {
@@ -113,6 +115,7 @@ static void init_port(void) {
 			ret, port_id);
 	}
 
+	printf(":: setting up queues for port: %d\n", port_id);
 	rxq_conf = dev_info.default_rxconf;
 	rxq_conf.offloads = port_conf.rxmode.offloads;
 	/* only set Rx queues: something we care only so far */
@@ -128,6 +131,7 @@ static void init_port(void) {
 		}
 	}
 
+	printf(":: setting up TX for port: %d\n", port_id);
 	txq_conf = dev_info.default_txconf;
 	txq_conf.offloads = port_conf.txmode.offloads;
 
@@ -142,6 +146,7 @@ static void init_port(void) {
 		}
 	}
 
+	printf(":: Enabeling promiscuous-mode for port: %d\n", port_id);
 	rte_eth_promiscuous_enable(port_id);
 	ret = rte_eth_dev_start(port_id);
 	if (ret < 0) {
@@ -150,6 +155,7 @@ static void init_port(void) {
 			ret, port_id);
 	}
 
+	printf(":: Asserting link is up for port: %d\n", port_id);
 	assert_link_status();
 
 	printf(":: initializing port: %d done\n", port_id);
@@ -181,27 +187,27 @@ int net_alloc(char** argv, struct net** network, struct fb* fb, struct llist* fb
 	if (ret < 0)
 		rte_exit(EXIT_FAILURE, ":: invalid EAL arguments\n");
 
-	// force_quit = 0;
+	force_quit = 0;
 	// signal(SIGINT, signal_handler);
 	// signal(SIGTERM, signal_handler);
 
-	// nr_ports = rte_eth_dev_count_avail();
-	// if (nr_ports == 0)
-	// 	rte_exit(EXIT_FAILURE, ":: no Ethernet ports found\n");
-	// port_id = 0;
-	// if (nr_ports != 1) {
-	// 	printf(":: warn: %d ports detected, but we use only one: port %u\n",
-	// 		nr_ports, port_id);
-	// }
-	// mbuf_pool = rte_pktmbuf_pool_create("mbuf_pool", 4096, 128, 0,
-	// 				    RTE_MBUF_DEFAULT_BUF_SIZE,
-	// 				    rte_socket_id());
-	// if (mbuf_pool == NULL)
-	// 	rte_exit(EXIT_FAILURE, "Cannot init mbuf pool\n");
+	nr_ports = rte_eth_dev_count_avail();
+	if (nr_ports == 0)
+		rte_exit(EXIT_FAILURE, ":: no Ethernet ports found\n");
+	port_id = 0;
+	if (nr_ports != 1) {
+		printf(":: warn: %d ports detected, but we use only one: port %u\n",
+			nr_ports, port_id);
+	}
+	mbuf_pool = rte_pktmbuf_pool_create("mbuf_pool", 4096, 128, 0,
+					    RTE_MBUF_DEFAULT_BUF_SIZE,
+					    rte_socket_id());
+	if (mbuf_pool == NULL)
+		rte_exit(EXIT_FAILURE, "Cannot init mbuf pool\n");
 
-	// init_port();
+	init_port();
 
-	// printf("Initialized all ports\n");
+	printf("Initialized all ports\n");
 
 	// pthread_t dpdk_thread_reference;
 	// if(pthread_create(&dpdk_thread_reference, NULL, dpdk_thread, fb)) {
