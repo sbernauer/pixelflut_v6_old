@@ -6,14 +6,6 @@
 
 #include "framebuffer.h"
 #include "llist.h"
-#include "ring.h"
-
-enum {
-	NET_STATE_IDLE,
-	NET_STATE_LISTEN,
-	NET_STATE_SHUTDOWN,
-	NET_STATE_EXIT
-};
 
 struct net;
 
@@ -29,12 +21,6 @@ struct net_thread {
 };
 
 struct net {
-	size_t ring_size;
-
-	unsigned int state;
-
-	int socket;
-
 	struct fb* fb;
 
 	unsigned int num_threads;
@@ -60,11 +46,9 @@ struct net_connection_thread {
 #define likely(x)	__builtin_expect((x),1)
 #define unlikely(x)	__builtin_expect((x),0)
 
-int net_alloc(struct net** network, struct fb* fb, struct llist* fb_list, struct fb_size* fb_size, size_t ring_size);
-void net_free(struct net* net);
+int net_alloc(struct net** network, struct fb* fb, struct llist* fb_list, struct fb_size* fb_size);
 
-
+int net_listen(struct net* net);
 void net_shutdown(struct net* net);
-int net_listen(struct net* net, unsigned int num_threads, struct sockaddr_storage* addr, size_t addr_len);
 
 #endif

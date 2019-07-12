@@ -120,28 +120,19 @@ int main(int argc, char** argv) {
 	int err, opt;
 	struct fb* fb;
 	struct llist fb_list;
-	struct sockaddr_storage* inaddr;
-	struct addrinfo* addr_list;
 	struct net* net;
 	struct llist fronts;
 	struct llist_entry* cursor;
 	struct frontend* front;
 	struct sdl_param sdl_param;
-	size_t addr_len;
 	unsigned int frontend_cnt = 0;
 	char* frontend_names[MAX_FRONTENDS];
 	bool handle_signals = true;
 	bool showTextualInfo = true;
 
-	char* port = PORT_DEFAULT;
-	char* listen_address = LISTEN_DEFAULT;
-
 	int width = WIDTH_DEFAULT;
 	int height = HEIGHT_DEFAULT;
 	int screen_update_rate = RATE_DEFAULT;
-
-	int ringbuffer_size = RINGBUFFER_DEFAULT;
-	int listen_threads = LISTEN_THREADS_DEFAULT;
 
 	struct timespec before, after, fpsSnapshot;
 	long long time_delta, time_delta_since_last_fps_snapshot;
@@ -155,14 +146,8 @@ int main(int argc, char** argv) {
 	unsigned long bytesCounterPreviousSecond = 0, actualBytesPerS = 0;
 	double loadAverages[3];
 
-	while((opt = getopt(argc, argv, "p:b:w:h:r:s:l:f:d?")) != -1) {
+	while((opt = getopt(argc, argv, "w:h:r:s:l:f:d?")) != -1) {
 		switch(opt) {
-			case('p'):
-				port = optarg;
-				break;
-			case('b'):
-				listen_address = optarg;
-				break;
 			case('w'):
 				width = atoi(optarg);
 				if(width <= 0) {
@@ -183,22 +168,6 @@ int main(int argc, char** argv) {
 				screen_update_rate = atoi(optarg);
 				if(screen_update_rate <= 0) {
 					fprintf(stderr, "Screen update rate must be > 0\n");
-					err = -EINVAL;
-					goto fail;
-				}
-				break;
-			case('s'):
-				ringbuffer_size = atoi(optarg);
-				if(ringbuffer_size < 2) {
-					fprintf(stderr, "Ring buffer size must be >= 2\n");
-					err = -EINVAL;
-					goto fail;
-				}
-				break;
-			case('l'):
-				listen_threads = atoi(optarg);
-				if(listen_threads <= 0) {
-					fprintf(stderr, "Number of listening threads must be > 0\n");
 					err = -EINVAL;
 					goto fail;
 				}
@@ -288,34 +257,35 @@ int main(int argc, char** argv) {
 		free(frontid);
 	}
 
-	if((err = net_alloc(&net, fb, &fb_list, &fb->size, ringbuffer_size))) {
+	if((err = net_alloc(&net, fb, &fb_list, &fb->size))) {
 		fprintf(stderr, "Failed to initialize network: %d => %s\n", err, strerror(-err));
 		goto fail_fronts;
 	}
+
 	if(handle_signals) {
 		if(signal(SIGINT, doshutdown)) {
 			fprintf(stderr, "Failed to bind signal\n");
 			err = -EINVAL;
-			goto fail_net;
+			goto fail;
 		}
 		if(signal(SIGPIPE, SIG_IGN)) {
 			fprintf(stderr, "Failed to bind signal\n");
 			err = -EINVAL;
-			goto fail_net;
+			goto fail;
 		}
 	}
 
-	if((err = -getaddrinfo(listen_address, port, NULL, &addr_list))) {
-		fprintf(stderr, "Failed to resolve listen address '%s', %d => %s\n", listen_address, err, gai_strerror(-err));
-		goto fail_net;
-	}
+	// if((err = -getaddrinfo(listen_address, port, NULL, &addr_list))) {
+	// 	fprintf(stderr, "Failed to resolve listen address '%s', %d => %s\n", listen_address, err, gai_strerror(-err));
+	// 	goto fail_net;
+	// }
 
-	inaddr = (struct sockaddr_storage*)addr_list->ai_addr;
-	addr_len = addr_list->ai_addrlen;
+	// inaddr = (struct sockaddr_storage*)addr_list->ai_addr;
+	// addr_len = addr_list->ai_addrlen;
 
-	if((err = net_listen(net, listen_threads, inaddr, addr_len))) {
+	if((err = net_listen(net))) {
 		fprintf(stderr, "Failed to start listening: %d => %s\n", err, strerror(-err));
-		goto fail_addrinfo;
+		goto fail;
 	}
 
 	clock_gettime(CLOCK_MONOTONIC, &fpsSnapshot);
@@ -370,10 +340,6 @@ int main(int argc, char** argv) {
 	net_shutdown(net);
 
 	fb_free_all(&fb_list);
-fail_addrinfo:
-	freeaddrinfo(addr_list);
-fail_net:
-	net_free(net);
 fail_fronts:
 	llist_for_each(&fronts, cursor) {
 		front = llist_entry_get_value(cursor, struct frontend, list);
