@@ -39,4 +39,19 @@ export RTE_TARGET=x86_64-native-linux-gcc
 make
 
 ### And run
+sudo build/pixelflut
+
+### Other side:
+Show arp entries:
+arp -a
+Add arp-entry:
+arp -s 10.0.0.1 f8:b1:56:c0:37:ba
+
+Start flooting:
+iperf -c 10.0.0.1 -b 1m -u -l 16 -P 1
+
+
+IPv6:
+ip -6 neigh show all
+sudo ip -6 neigh add fe80::42 dev enp0s31f6
 

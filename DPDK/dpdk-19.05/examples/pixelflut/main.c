@@ -68,8 +68,6 @@ main_loop(void)
 	uint16_t x, y;
 	uint32_t rgb;
 
-
-
 	while (!force_quit) {
 		for (i = 0; i < nr_queues; i++) {
 			nb_rx = rte_eth_rx_burst(port_id, i, mbufs, RX_BURST_SIZE);
@@ -83,9 +81,15 @@ main_loop(void)
 					// printf(" - queue=0x%x", (unsigned int)i);
 
 					if (eth_hdr->ether_type == rte_be_to_cpu_16(ETHER_TYPE_IPv6)) {
-						printf("Found IPv6 (pixelflut): ");
-
+						printf("Found IPv6: ");
 						ipv6_hdr = rte_pktmbuf_mtod_offset(m, struct ipv6_hdr *, sizeof(struct ether_hdr));
+
+						if (ipv6_hdr->proto == 58) { // ICMP6
+							printf("Detected ICMP6");
+							// TODO Reply to ICMP6
+						}
+						// Continuing without any restriction, client can send whatever type he wants
+
 						uint8_t *dst = ipv6_hdr->dst_addr;
 						print_ip6_addr(" IpV6: src: ", ipv6_hdr->src_addr);
 						print_ip6_addr(" IpV6: dst: ", ipv6_hdr->dst_addr);
@@ -104,8 +108,6 @@ main_loop(void)
 					} else {
 						printf("Unkown protocol: %d", eth_hdr->ether_type);
 					}
-
-
 
 					rte_pktmbuf_free(m);
 				}
