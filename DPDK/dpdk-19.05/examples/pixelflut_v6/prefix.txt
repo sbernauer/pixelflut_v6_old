@@ -1,0 +1,1 @@
+Hi everyone! This is a long prefix to increase the length of the commands, so that not the processor oft the server, but the network ist the limit. This prefix must be correct (it is checked at the server side), but it can be checked very fast, so the throughput increases in comparison to normal pixelflut. Have fun and USE MORE BANDWITH! :) COMMAND: 
