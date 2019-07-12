@@ -36,42 +36,76 @@ static uint16_t nr_queues = 1; // TODO Increase if nic supports it
 struct rte_mempool *mbuf_pool;
 struct rte_flow *flow;
 
+#define RX_BURST_SIZE 32
+
 #define SRC_IP ((0<<24) + (0<<16) + (0<<8) + 0) /* src ip = 0.0.0.0 */
 #define DEST_IP ((192<<24) + (168<<16) + (1<<8) + 1) /* dest ip = 192.168.1.1 */
 #define FULL_MASK 0xffffffff /* full mask */
 #define EMPTY_MASK 0x0 /* empty mask */
 
-static inline void
-print_ether_addr(const char *what, struct ether_addr *eth_addr)
+static inline void print_ether_addr(const char *what, struct ether_addr *eth_addr)
 {
 	char buf[ETHER_ADDR_FMT_SIZE];
 	ether_format_addr(buf, ETHER_ADDR_FMT_SIZE, eth_addr);
 	printf("%s%s", what, buf);
 }
 
+static inline void print_ip6_addr(const char *what, uint8_t *addr) {
+	printf("%s %02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x",
+		what, addr[0], addr[1], addr[2], addr[3], addr[4], addr[5], addr[6], addr[7],     addr[8], addr[9], addr[10], addr[11], addr[12], addr[13], addr[14], addr[15]);
+}
+
 static void
 main_loop(void)
 {
-	struct rte_mbuf *mbufs[32];
+	struct rte_mbuf *mbufs[RX_BURST_SIZE];
 	struct ether_hdr *eth_hdr;
+	struct ipv4_hdr *ipv4_hdr;
+	struct ipv6_hdr *ipv6_hdr;
 	struct rte_flow_error error;
 	uint16_t nb_rx;
-	uint16_t i;
-	uint16_t j;
+	uint16_t i, j;
+	uint16_t x, y;
+	uint32_t rgb;
+
+
 
 	while (!force_quit) {
 		for (i = 0; i < nr_queues; i++) {
-			nb_rx = rte_eth_rx_burst(port_id,
-						i, mbufs, 32);
+			nb_rx = rte_eth_rx_burst(port_id, i, mbufs, RX_BURST_SIZE);
 			if (nb_rx) {
 				for (j = 0; j < nb_rx; j++) {
 					struct rte_mbuf *m = mbufs[j];
 
 					eth_hdr = rte_pktmbuf_mtod(m, struct ether_hdr *);
-					print_ether_addr("src=", &eth_hdr->s_addr);
-					print_ether_addr(" - dst=", &eth_hdr->d_addr);
-					printf(" - queue=0x%x", (unsigned int)i);
-					printf("\n");
+					// print_ether_addr("src=", &eth_hdr->s_addr);
+					// print_ether_addr(" - dst=", &eth_hdr->d_addr);
+					// printf(" - queue=0x%x", (unsigned int)i);
+
+					if (eth_hdr->ether_type == rte_be_to_cpu_16(ETHER_TYPE_IPv6)) {
+						printf("Found IPv6 (pixelflut): ");
+
+						ipv6_hdr = rte_pktmbuf_mtod_offset(m, struct ipv6_hdr *, sizeof(struct ether_hdr));
+						uint8_t *dst = ipv6_hdr->dst_addr;
+						print_ip6_addr(" IpV6: src: ", ipv6_hdr->src_addr);
+						print_ip6_addr(" IpV6: dst: ", ipv6_hdr->dst_addr);
+
+						x = (dst[8] << 8) + dst[9];
+						y = (dst[10] << 8) + dst[11];
+						rgb = (dst[12] << 16) + (dst[13] << 8) + dst[14];
+						printf(" --- x: %d y: %d rgb: %08x ---\n", x, y, rgb);
+
+
+					} else if (eth_hdr->ether_type == rte_be_to_cpu_16(ETHER_TYPE_IPv4)) {
+						printf("Found IPv4: ");
+
+						ipv4_hdr = rte_pktmbuf_mtod_offset(m, struct ipv4_hdr *, sizeof(struct ether_hdr));
+						printf(" IPv4 src: %x dst: %x\n", ipv4_hdr->src_addr, ipv4_hdr->dst_addr);
+					} else {
+						printf("Unkown protocol: %d", eth_hdr->ether_type);
+					}
+
+
 
 					rte_pktmbuf_free(m);
 				}
@@ -114,19 +148,29 @@ init_port(void)
 	struct rte_eth_conf port_conf = {
 		.rxmode = {
 			.split_hdr_size = 0,
-		},
-		.txmode = {
+			.mq_mode	= ETH_MQ_RX_RSS,
+			.max_rx_pkt_len = ETHER_MAX_LEN,
 			.offloads =
+				DEV_RX_OFFLOAD_CHECKSUM    |
+				DEV_RX_OFFLOAD_JUMBO_FRAME |
+				DEV_RX_OFFLOAD_VLAN_STRIP,
+		},
+		// .rx_adv_conf = {
+		// 	.rss_conf = {
+		// 		.rss_key = NULL,
+		// 		.rss_hf = ETH_RSS_IP | ETH_RSS_UDP |
+		// 			ETH_RSS_TCP | ETH_RSS_SCTP,
+		// 	},
+		// },
+		// .txmode = {
+		// 	.offloads =
 				// DEV_TX_OFFLOAD_VLAN_INSERT |
 				// DEV_TX_OFFLOAD_IPV4_CKSUM  |
 				// DEV_TX_OFFLOAD_UDP_CKSUM   |
 				// DEV_TX_OFFLOAD_TCP_CKSUM   |
 				// DEV_TX_OFFLOAD_SCTP_CKSUM  |
 				// DEV_TX_OFFLOAD_TCP_TSO     |
-				DEV_RX_OFFLOAD_JUMBO_FRAME |
-				DEV_RX_OFFLOAD_CHECKSUM    |
-				DEV_RX_OFFLOAD_VLAN_STRIP,
-		},
+		// },
 	};
 	struct rte_eth_txconf txq_conf;
 	struct rte_eth_rxconf rxq_conf;
