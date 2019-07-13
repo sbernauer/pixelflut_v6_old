@@ -22,6 +22,8 @@ struct fb {
 	unsigned long long bytesCounter;
 };
 
+#define likely(x)	__builtin_expect((x),1)
+#define unlikely(x)	__builtin_expect((x),0)
 
 // Management
 int fb_alloc(struct fb** framebuffer, unsigned int width, unsigned int height);

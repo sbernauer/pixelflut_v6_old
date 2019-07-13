@@ -65,10 +65,12 @@ void fb_free_all(struct llist* fbs) {
 }
 
 void fb_set_pixel(struct fb* fb, unsigned int x, unsigned int y, uint32_t* pixel) {
-	uint32_t* target;
-	assert(x < fb->size.width);
-	assert(y < fb->size.height);
+	if (unlikely(x >= fb->size.width) || unlikely(y >= fb->size.height)) {
+		printf("Dropping invalid command with x: %d y: %d\n", x, y);
+		return;
+	}
 
+	uint32_t* target;
 	target = &(fb->pixels[y * fb->size.width + x]);
 	memcpy(target, pixel, sizeof(*pixel));
 	fb->pixelCounter++;
