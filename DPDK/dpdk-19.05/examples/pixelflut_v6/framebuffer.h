@@ -34,7 +34,6 @@ void fb_set_pixel(struct fb* fb, unsigned int x, unsigned int y, uint32_t* pixel
 void fb_set_pixel_rgb(struct fb* fb, unsigned int x, unsigned int y, uint8_t red, uint8_t green, uint8_t blue);
 uint32_t fb_get_pixel(struct fb* fb, unsigned int x, unsigned int y);
 int fb_resize(struct fb* fb, unsigned int width, unsigned int height);
-int fb_coalesce(struct fb* fb, struct llist* fbs);
 
 // Info
 inline struct fb_size* fb_get_size(struct fb* fb) {

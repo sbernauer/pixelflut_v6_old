@@ -113,34 +113,3 @@ int fb_resize(struct fb* fb, unsigned int width, unsigned int height) {
 fail:
 	return err;
 }
-
-int fb_coalesce(struct fb* fb, struct llist* fbs) {
-	struct llist_entry* cursor;
-	struct fb* other;
-	size_t i, j, fb_size = fb->size.width * fb->size.height, num_fbs = llist_length(fbs);
-	unsigned int indices[num_fbs];
-	unsigned long long globalPixelCounter = 0;
-	unsigned long long globalBytesCounter = 0;
-
-	for(i = 0; i < num_fbs; i++) {
-		indices[i] = i;
-	}
-	ARRAY_SHUFFLE(indices, num_fbs);
-	for(i = 0; i < num_fbs; i++) {
-		cursor = llist_get_entry(fbs, indices[i]);
-		other = llist_entry_get_value(cursor, struct fb, list);
-		if(fb->size.width != other->size.width || fb->size.height != other->size.height) {
-			return -EINVAL;
-		}
-		for(j = 0; j < fb_size; j++) {
-			// This type of transparency handling is crap. We should do proper coalescing
-			fb->pixels[j] = other->pixels[j];
-		}
-		globalPixelCounter += other->pixelCounter;
-		globalBytesCounter += other->bytesCounter;
-	}
-
-	fb->pixelCounter = globalPixelCounter;
-	fb->bytesCounter = globalBytesCounter;
-	return 0;
-}

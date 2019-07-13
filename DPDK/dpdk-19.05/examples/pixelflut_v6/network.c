@@ -179,12 +179,12 @@ void *dpdk_thread(void *fb) {
 	return NULL;
 }
 
-int net_alloc(char** argv, struct net** network, struct fb* fb, struct llist* fb_list, struct fb_size* fb_size) {
+int net_listen(char** argv, struct fb* fb) {
 
 	int ret;
 	uint16_t nr_ports;
 
-	ret = rte_eal_init(1, argv); // Give the EAL no CLI-parameter
+	ret = rte_eal_init(1, argv); // Give the EAL no CLI-parameter, so length is 1 (nothing). But still passing the original CLI-parameters
 	if (ret < 0)
 		rte_exit(EXIT_FAILURE, ":: invalid EAL arguments\n");
 
@@ -210,22 +210,14 @@ int net_alloc(char** argv, struct net** network, struct fb* fb, struct llist* fb
 
 	printf("Initialized all ports\n");
 
-	// pthread_t dpdk_thread_reference;
-	// if(pthread_create(&dpdk_thread_reference, NULL, dpdk_thread, fb)) {
-	// 	fprintf(stderr, "Error creating dpdk_thread thread\n");
-	// 	return -1;
-	// }
-	// printf("Created dpdk thread.\n");
+	pthread_t dpdk_thread_reference;
+	if(pthread_create(&dpdk_thread_reference, NULL, dpdk_thread, fb)) {
+		fprintf(stderr, "Error creating dpdk_thread thread\n");
+		return -1;
+	}
+	printf("Created dpdk thread.\n");
 
 	return 0;
-}
-
-int net_listen(struct net* net) {
-	struct fb* fb = net->fb;
 
 	return 0;
-}
-
-void net_shutdown(struct net* net) {
-
 }

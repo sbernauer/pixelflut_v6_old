@@ -120,8 +120,6 @@ int main(int argc, char** argv) {
 
 	int err, opt;
 	struct fb* fb;
-	struct llist fb_list;
-	struct net* net;
 	struct llist fronts;
 	struct llist_entry* cursor;
 	struct frontend* front;
@@ -211,9 +209,7 @@ int main(int argc, char** argv) {
 		goto fail;
 	}
 
-	llist_init(&fb_list);
-	sdl_param.cb_private = &fb_list;
-	sdl_param.resize_cb = resize_cb;
+	printf("Registering frontends\n");
 	llist_init(&fronts);
 	while(frontend_cnt > 0 && frontend_cnt--) {
 		char* frontid = frontend_names[frontend_cnt];
@@ -225,6 +221,7 @@ int main(int argc, char** argv) {
 			goto fail_fronts_free_name;
 		}
 		handle_signals = handle_signals && !frontdef->handles_signals;
+
 		if((err = frontend_alloc(frontdef, &front, fb, &sdl_param))) {
 			fprintf(stderr, "Failed to allocate frontend '%s'\n", frontdef->name);
 			goto fail_fronts_free_name;
@@ -258,11 +255,6 @@ int main(int argc, char** argv) {
 		free(frontid);
 	}
 
-	if((err = net_alloc(argv, &net, fb, &fb_list, &fb->size))) {
-		fprintf(stderr, "Failed to initialize network: %d => %s\n", err, strerror(-err));
-		goto fail_fronts;
-	}
-
 	if(handle_signals) {
 		if(signal(SIGINT, doshutdown)) {
 			fprintf(stderr, "Failed to bind signal\n");
@@ -284,7 +276,7 @@ int main(int argc, char** argv) {
 	// inaddr = (struct sockaddr_storage*)addr_list->ai_addr;
 	// addr_len = addr_list->ai_addrlen;
 
-	if((err = net_listen(net))) {
+	if((err = net_listen(argv, fb))) {
 		fprintf(stderr, "Failed to start listening: %d => %s\n", err, strerror(-err));
 		goto fail;
 	}
@@ -292,9 +284,6 @@ int main(int argc, char** argv) {
 	clock_gettime(CLOCK_MONOTONIC, &fpsSnapshot);
 	while(!do_exit) {
 		clock_gettime(CLOCK_MONOTONIC, &before);
-		llist_lock(&fb_list);
-		fb_coalesce(fb, &fb_list);
-		llist_unlock(&fb_list);
 		llist_for_each(&fronts, cursor) {
 			front = llist_entry_get_value(cursor, struct frontend, list);
 			if(showTextualInfo && frontend_can_draw_string(front)) {
@@ -325,6 +314,7 @@ int main(int argc, char** argv) {
 
 			getloadavg(loadAverages, 3);
 
+			printf("Got fb->pixelCounter: %lld\n", fb->pixelCounter);
 			sprintf(textualInfo1, "FPS: %d Load: %3.1f %3.1f %3.1f", actualFps, loadAverages[0], loadAverages[1], loadAverages[2]);
 			sprintf(textualInfo2, "%.2f Gb/s %.1f GB received", (double)actualBytesPerS / (1024 * 1024 * 1024) * 8, (double)fb->bytesCounter / 1e9);
 			sprintf(textualInfo3, "%.2f M pixel/s %.1f k pixels", (double)actualPixelPerS / 1e6, (double)fb->pixelCounter / 1e3);
@@ -338,9 +328,7 @@ int main(int argc, char** argv) {
 			usleep(time_delta / 1000UL);
 		}
 	}
-	net_shutdown(net);
 
-	fb_free_all(&fb_list);
 fail_fronts:
 	llist_for_each(&fronts, cursor) {
 		front = llist_entry_get_value(cursor, struct frontend, list);
