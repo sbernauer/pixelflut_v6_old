@@ -115,7 +115,7 @@ static void init_port(void) {
 			ret, port_id);
 	}
 
-	printf(":: setting up queues for port: %d\n", port_id);
+	printf(":: setting up RX queues for port: %d\n", port_id);
 	rxq_conf = dev_info.default_rxconf;
 	rxq_conf.offloads = port_conf.rxmode.offloads;
 	/* only set Rx queues: something we care only so far */
@@ -131,7 +131,7 @@ static void init_port(void) {
 		}
 	}
 
-	printf(":: setting up TX for port: %d\n", port_id);
+	printf(":: setting up TX queue for port: %d\n", port_id);
 	txq_conf = dev_info.default_txconf;
 	txq_conf.offloads = port_conf.txmode.offloads;
 
@@ -148,6 +148,7 @@ static void init_port(void) {
 
 	printf(":: Enabeling promiscuous-mode for port: %d\n", port_id);
 	rte_eth_promiscuous_enable(port_id);
+	printf(":: Starting port: %d\n", port_id);
 	ret = rte_eth_dev_start(port_id);
 	if (ret < 0) {
 		rte_exit(EXIT_FAILURE,

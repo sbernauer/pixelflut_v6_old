@@ -1,0 +1,7 @@
+examples/pixelflut_v6/*.o
+examples/pixelflut_v6/pixelflut_v6.map
+examples/pixelflut_v6/pixeflut_v6
+examples/pixelflut_v6/.network.o.d.tmp
+
+build/
+x86_64-native-linux-gcc/
