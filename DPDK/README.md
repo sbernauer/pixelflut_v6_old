@@ -6,6 +6,8 @@ echo 1024 > /sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages
 mkdir -p /mnt/huge
 mount -t hugetlbfs nodev /mnt/huge
 
+## Dependencies
+apt install libnuma-dev linux-source linux-headers-4.9.0-9-all libsdl2-dev git build-essential libsdl2-dev libpthread-stubs0-dev libvncserver-dev libnuma-dev
 
 ## Build dpdk
 make config T=x86_64-native-linux-gcc
