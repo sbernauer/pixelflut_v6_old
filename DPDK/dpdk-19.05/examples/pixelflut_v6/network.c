@@ -204,7 +204,9 @@ void *dpdk_thread(void *fb) {
 						ipv6_hdr = rte_pktmbuf_mtod_offset(m, struct ipv6_hdr *, sizeof(struct ether_hdr));
 
 						if (ipv6_hdr->proto == 58) { // ICMP6
-							printf("Detected ICMP6");
+							//int icmp_type = *(&m + (sizeof(struct ether_hdr)));
+							uint8_t *icmp_type = rte_pktmbuf_mtod_offset(m, uint8_t*, sizeof(struct ether_hdr) + sizeof(struct ipv6_hdr));
+							printf("Detected ICMP6 (Type: %u)", *icmp_type);
 							// TODO Reply to ICMP6
 						}
 						// Continuing without any restriction, client can send whatever type he wants
