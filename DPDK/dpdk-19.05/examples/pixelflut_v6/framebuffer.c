@@ -64,7 +64,7 @@ void fb_free_all(struct llist* fbs) {
 	}
 }
 
-void fb_set_pixel(struct fb* fb, unsigned int x, unsigned int y, uint32_t* pixel) {
+void fb_set_pixel(struct fb* fb, unsigned int x, unsigned int y, uint32_t pixel) {
 	if (unlikely(x >= fb->size.width) || unlikely(y >= fb->size.height)) {
 		printf("Dropping invalid command with x: %d y: %d\n", x, y);
 		return;
@@ -72,8 +72,7 @@ void fb_set_pixel(struct fb* fb, unsigned int x, unsigned int y, uint32_t* pixel
 
 	uint32_t* target;
 	target = &(fb->pixels[y * fb->size.width + x]);
-	memcpy(target, pixel, sizeof(*pixel));
-	fb->pixelCounter++;
+	*target = pixel;
 }
 
 // It might be a good idea to offer a variant returning a pointer to avoid unnecessary copies

@@ -169,7 +169,7 @@ static void init_port(void) {
 	}
 
 	printf(":: Asserting link is up for port: %d\n", port_id);
-	assert_link_status();
+	// TODO assert_link_status();
 
 	printf(":: initializing port: %d done\n", port_id);
 }
@@ -177,7 +177,7 @@ static void init_port(void) {
 void *dpdk_thread(void *fb) {
 
 	int port = 0; // TODO
-		struct rte_mbuf *mbufs[RX_BURST_SIZE];
+	struct rte_mbuf *mbufs[RX_BURST_SIZE];
 	struct ether_hdr *eth_hdr;
 	struct ipv4_hdr *ipv4_hdr;
 	struct ipv6_hdr *ipv6_hdr;
