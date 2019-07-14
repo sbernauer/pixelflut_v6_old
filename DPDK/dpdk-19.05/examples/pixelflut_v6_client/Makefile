@@ -1,9 +1,11 @@
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright 2017 Mellanox Technologies, Ltd
+# Copyright(c) 2010-2014 Intel Corporation
 
-APP = pixelflut
+# binary name
+APP = pixeflut_v6_client
 
-SRCS-y := main.c
+# all source are stored in SRCS-y
+SRCS-y := pixelflut_v6_client.c
 
 # Build using pkg-config variables if possible
 $(shell pkg-config --exists libdpdk)
@@ -35,7 +37,7 @@ clean:
 	rm -f build/$(APP) build/$(APP)-static build/$(APP)-shared
 	rmdir --ignore-fail-on-non-empty build
 
-else
+else # Build using legacy build system
 
 ifeq ($(RTE_SDK),)
 $(error "Please define RTE_SDK environment variable")
@@ -46,9 +48,15 @@ RTE_TARGET ?= $(notdir $(abspath $(dir $(firstword $(wildcard $(RTE_SDK)/*/.conf
 
 include $(RTE_SDK)/mk/rte.vars.mk
 
-CFLAGS += -O3
 CFLAGS += $(WERROR_FLAGS)
 
-include $(RTE_SDK)/mk/rte.extapp.mk
+# workaround for a gcc bug with noreturn attribute
+# http://gcc.gnu.org/bugzilla/show_bug.cgi?id=12603
+ifeq ($(CONFIG_RTE_TOOLCHAIN_GCC),y)
+CFLAGS_main.o += -Wno-return-type
+endif
 
+EXTRA_CFLAGS += -O3 -g -Wfatal-errors
+
+include $(RTE_SDK)/mk/rte.extapp.mk
 endif
