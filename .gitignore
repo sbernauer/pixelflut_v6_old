@@ -1,0 +1,5 @@
+DPDK/dpdk-19.05/.ci
+DPDK/dpdk-19.05/.gitattributes
+DPDK/dpdk-19.05/.travis.yml
+DPDK/dpdk-19.05/doc
+DPDK/dpdk-19.05/devtools/

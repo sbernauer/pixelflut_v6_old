@@ -17,6 +17,8 @@
 #define MBUF_CACHE_SIZE 250
 #define BURST_SIZE 32
 
+static struct rte_mempool *mbuf_pool;
+
 static const struct rte_eth_conf port_conf_default = {
 	.rxmode = {
 		.max_rx_pkt_len = ETHER_MAX_LEN,
@@ -27,10 +29,10 @@ static const struct rte_eth_conf port_conf_default = {
 
 /*
  * Initializes a given port using global settings and with the RX buffers
- * coming from the mbuf_pool passed as a parameter.
+ * coming from the mbuf_pool.
  */
 static inline int
-port_init(uint16_t port, struct rte_mempool *mbuf_pool)
+port_init(uint16_t port)
 {
 	struct rte_eth_conf port_conf = port_conf_default;
 	const uint16_t rx_rings = 1, tx_rings = 1;
@@ -129,24 +131,33 @@ lcore_main(void)
 		 */
 		RTE_ETH_FOREACH_DEV(port) {
 
-			/* Get burst of RX packets, from first port of pair. */
-			struct rte_mbuf *bufs[BURST_SIZE];
-			const uint16_t nb_rx = rte_eth_rx_burst(port, 0,
-					bufs, BURST_SIZE);
-
-			if (unlikely(nb_rx == 0))
-				continue;
-
-			/* Send burst of TX packets, to second port of pair. */
-			const uint16_t nb_tx = rte_eth_tx_burst(port ^ 1, 0,
-					bufs, nb_rx);
-
-			/* Free any unsent packets. */
-			if (unlikely(nb_tx < nb_rx)) {
-				uint16_t buf;
-				for (buf = nb_tx; buf < nb_rx; buf++)
-					rte_pktmbuf_free(bufs[buf]);
+			struct rte_mbuf *created_pkt;
+			
+			created_pkt = rte_pktmbuf_alloc(mbuf_pool);
+			if (created_pkt == NULL) {
+				printf("Failed to allocate mbuf for packet\n");
+				return;
 			}
+
+
+			// /* Get burst of RX packets, from first port of pair. */
+			// struct rte_mbuf *bufs[BURST_SIZE];
+			// const uint16_t nb_rx = rte_eth_rx_burst(port, 0,
+			// 		bufs, BURST_SIZE);
+
+			// if (unlikely(nb_rx == 0))
+			// 	continue;
+
+			//  Send burst of TX packets, to second port of pair. 
+			// const uint16_t nb_tx = rte_eth_tx_burst(port ^ 1, 0,
+			// 		bufs, nb_rx);
+
+			// /* Free any unsent packets. */
+			// if (unlikely(nb_tx < nb_rx)) {
+			// 	uint16_t buf;
+			// 	for (buf = nb_tx; buf < nb_rx; buf++)
+			// 		rte_pktmbuf_free(bufs[buf]);
+			//}
 		}
 	}
 }
@@ -158,7 +169,6 @@ lcore_main(void)
 int
 main(int argc, char *argv[])
 {
-	struct rte_mempool *mbuf_pool;
 	unsigned nb_ports;
 	uint16_t portid;
 
@@ -172,8 +182,8 @@ main(int argc, char *argv[])
 
 	/* Check that there is an even number of ports to send/receive on. */
 	nb_ports = rte_eth_dev_count_avail();
-	if (nb_ports < 2 || (nb_ports & 1))
-		rte_exit(EXIT_FAILURE, "Error: number of ports must be even\n");
+	// if (nb_ports < 2 || (nb_ports & 1))
+	// 	rte_exit(EXIT_FAILURE, "Error: number of ports must be even\n");
 
 	/* Creates a new mempool in memory to hold the mbufs. */
 	mbuf_pool = rte_pktmbuf_pool_create("MBUF_POOL", NUM_MBUFS * nb_ports,
@@ -184,7 +194,7 @@ main(int argc, char *argv[])
 
 	/* Initialize all ports. */
 	RTE_ETH_FOREACH_DEV(portid)
-		if (port_init(portid, mbuf_pool) != 0)
+		if (port_init(portid) != 0)
 			rte_exit(EXIT_FAILURE, "Cannot init port %"PRIu16 "\n",
 					portid);
 

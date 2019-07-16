@@ -57,3 +57,9 @@ IPv6:
 ip -6 neigh show all
 sudo ip -6 neigh add fe80::42 dev enp0s31f6
 
+### Transit net
+sudo ip -6 addr add 4000:1234::10/64 dev eno1
+sudo ip -6 neigh add 4000:1234::42 lladdr 28:f1:0e:26:3d:c7 dev eno1   # MAC is laptop
+
+### Destination net
+sudo ip -6 route add 4000:42::/64 dev eno1 nexthop via 4000:1234::42
