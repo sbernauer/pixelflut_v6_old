@@ -107,6 +107,8 @@ static  __attribute__((noreturn)) void lcore_main()
 {
     uint16_t port;
     struct ether_hdr *eth_hdr;
+    struct ipv6_hdr *ipv6_hdr;
+
     struct ether_addr daddr;
     daddr.addr_bytes[0] = 0xf8;
     daddr.addr_bytes[1] = 0xb1;
@@ -114,12 +116,6 @@ static  __attribute__((noreturn)) void lcore_main()
     daddr.addr_bytes[3] = 0xc0;
     daddr.addr_bytes[4] = 0x37;
     daddr.addr_bytes[5] = 0xba;
-    // daddr.addr_bytes[0] = 0xff;
-    // daddr.addr_bytes[1] = 0xff;
-    // daddr.addr_bytes[2] = 0xff;
-    // daddr.addr_bytes[3] = 0xff;
-    // daddr.addr_bytes[4] = 0xff;
-    // daddr.addr_bytes[5] = 0xff;
 
     struct ether_addr saddr;
     saddr.addr_bytes[0] = 0x28;
@@ -128,12 +124,6 @@ static  __attribute__((noreturn)) void lcore_main()
     saddr.addr_bytes[3] = 0x26;
     saddr.addr_bytes[4] = 0x3d;
     saddr.addr_bytes[5] = 0xc7;
-    // saddr.addr_bytes[0] = 0;
-    // saddr.addr_bytes[1] = 0;
-    // saddr.addr_bytes[2] = 0;
-    // saddr.addr_bytes[3] = 0;
-    // saddr.addr_bytes[4] = 0;
-    // saddr.addr_bytes[5] = 0;
 
     int32_t i;
     int ret;
@@ -169,6 +159,32 @@ static  __attribute__((noreturn)) void lcore_main()
                 rte_memcpy(&(eth_hdr->s_addr), &saddr, sizeof(struct ether_addr));
                 rte_memcpy(&(eth_hdr->d_addr), &daddr, sizeof(struct ether_addr));
 
+                ipv6_hdr = rte_pktmbuf_mtod_offset(m_head[i], struct ipv6_hdr *, sizeof(struct ether_hdr));
+                ipv6_hdr->vtc_flow = htonl(6 << 28); // IP version 6
+
+                // Destination /64 IPv6 network
+                ipv6_hdr->dst_addr[0] = 0x40;
+                ipv6_hdr->dst_addr[1] = 0x00;
+                ipv6_hdr->dst_addr[2] = 0x42;
+                ipv6_hdr->dst_addr[3] = 0x00;
+                ipv6_hdr->dst_addr[4] = 0;
+                ipv6_hdr->dst_addr[5] = 0;
+                ipv6_hdr->dst_addr[6] = 0;
+                ipv6_hdr->dst_addr[7] = 0;
+
+                // X Coordinate
+                ipv6_hdr->dst_addr[8] = 0;
+                ipv6_hdr->dst_addr[9] = 10;
+
+				// Y Coordinate
+                ipv6_hdr->dst_addr[10] = 0;
+                ipv6_hdr->dst_addr[11] = 10;
+
+                // Color in rgb
+                ipv6_hdr->dst_addr[12] = 0xff;
+                ipv6_hdr->dst_addr[13] = 0xcc;
+                ipv6_hdr->dst_addr[14] = 0x99;
+                ipv6_hdr->dst_addr[15] = 0x00;
             }
             const uint16_t nb_tx = rte_eth_tx_burst(port, 0, m_head, BURST_SIZE);
             if (unlikely(nb_tx < BURST_SIZE)) {
