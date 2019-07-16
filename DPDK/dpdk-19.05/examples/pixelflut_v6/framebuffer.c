@@ -73,6 +73,7 @@ void fb_set_pixel(struct fb* fb, unsigned int x, unsigned int y, uint32_t pixel)
 	uint32_t* target;
 	target = &(fb->pixels[y * fb->size.width + x]);
 	*target = pixel;
+	fb->pixelCounter++;
 }
 
 // It might be a good idea to offer a variant returning a pointer to avoid unnecessary copies

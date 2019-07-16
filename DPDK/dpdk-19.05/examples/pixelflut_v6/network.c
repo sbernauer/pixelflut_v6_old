@@ -35,7 +35,7 @@
 #define CHECK_INTERVAL 1000  /* 100ms */
 #define MAX_REPEAT_TIMES 90  /* 9s (90 * 100ms) in total */
 
-#define RX_BURST_SIZE 32
+#define RX_BURST_SIZE 2048
 
 static volatile int force_quit;
 
@@ -188,6 +188,12 @@ void *dpdk_thread(void *fb) {
 	uint32_t rgb;
 
 	while (!force_quit) {
+		struct rte_eth_stats eth_stats;
+		RTE_ETH_FOREACH_DEV(i) {
+			rte_eth_stats_get(i, &eth_stats);
+			printf("Total number of packets received %llu, dropped rx full %llu and rest= %llu, %llu, %llu\n", eth_stats.ipackets, eth_stats.imissed, eth_stats.ierrors, eth_stats.rx_nombuf, eth_stats.q_ipackets[0]);
+		}
+
 		for (i = 0; i < nr_queues; i++) {
 			nb_rx = rte_eth_rx_burst(port_id, i, mbufs, RX_BURST_SIZE);
 			if (nb_rx) {
@@ -200,33 +206,33 @@ void *dpdk_thread(void *fb) {
 					// printf(" - queue=0x%x", (unsigned int)i);
 
 					if (eth_hdr->ether_type == rte_be_to_cpu_16(ETHER_TYPE_IPv6)) {
-						printf("Found IPv6: ");
+						// printf("Found IPv6: ");
 						ipv6_hdr = rte_pktmbuf_mtod_offset(m, struct ipv6_hdr *, sizeof(struct ether_hdr));
 
 						if (ipv6_hdr->proto == 58) { // ICMP6
 							//int icmp_type = *(&m + (sizeof(struct ether_hdr)));
 							uint8_t *icmp_type = rte_pktmbuf_mtod_offset(m, uint8_t*, sizeof(struct ether_hdr) + sizeof(struct ipv6_hdr));
-							printf("Detected ICMP6 (Type: %u)", *icmp_type);
+							// printf("Detected ICMP6 (Type: %u)", *icmp_type);
 							// TODO Reply to ICMP6
 						}
 						// Continuing without any restriction, client can send whatever type he wants
 
 						uint8_t *dst = ipv6_hdr->dst_addr;
-						print_ip6_addr(" IpV6: src: ", ipv6_hdr->src_addr);
-						print_ip6_addr(" IpV6: dst: ", ipv6_hdr->dst_addr);
+						// print_ip6_addr(" IpV6: src: ", ipv6_hdr->src_addr);
+						// print_ip6_addr(" IpV6: dst: ", ipv6_hdr->dst_addr);
 
 						x = (dst[8] << 8) + dst[9];
 						y = (dst[10] << 8) + dst[11];
-						rgb = (dst[12] << 16) + (dst[13] << 8) + dst[14];
-						printf(" --- x: %d y: %d rgb: %08x ---\n", x, y, rgb);
+						rgb = (dst[12] << 24) + (dst[13] << 16) + (dst[14] << 8);
+						//printf(" --- x: %d y: %d rgb: %08x ---\n", x, y, rgb);
 						fb_set_pixel(fb, x, y, rgb);
 
 
 					} else if (eth_hdr->ether_type == rte_be_to_cpu_16(ETHER_TYPE_IPv4)) {
-						printf("Found IPv4: ");
+						// printf("Found IPv4: ");
 
 						ipv4_hdr = rte_pktmbuf_mtod_offset(m, struct ipv4_hdr *, sizeof(struct ether_hdr));
-						printf(" IPv4 src: %x dst: %x\n", ipv4_hdr->src_addr, ipv4_hdr->dst_addr);
+						// printf(" IPv4 src: %x dst: %x\n", ipv4_hdr->src_addr, ipv4_hdr->dst_addr);
 					} else {
 						printf("Unkown protocol: %d", eth_hdr->ether_type);
 					}
@@ -236,6 +242,8 @@ void *dpdk_thread(void *fb) {
 			}
 		}
 	}
+
+
 
 	/* closing and releasing resources */
 	// rte_flow_flush(port_id, &error);
