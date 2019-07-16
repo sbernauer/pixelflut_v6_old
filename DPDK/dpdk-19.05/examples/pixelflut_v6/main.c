@@ -255,18 +255,18 @@ int main(int argc, char** argv) {
 		free(frontid);
 	}
 
-	if(handle_signals) {
-		if(signal(SIGINT, doshutdown)) {
-			fprintf(stderr, "Failed to bind signal\n");
-			err = -EINVAL;
-			goto fail;
-		}
-		if(signal(SIGPIPE, SIG_IGN)) {
-			fprintf(stderr, "Failed to bind signal\n");
-			err = -EINVAL;
-			goto fail;
-		}
-	}
+	// if(handle_signals) {
+	// 	if(signal(SIGINT, doshutdown)) {
+	// 		fprintf(stderr, "Failed to bind signal\n");
+	// 		err = -EINVAL;
+	// 		goto fail;
+	// 	}
+	// 	if(signal(SIGPIPE, SIG_IGN)) {
+	// 		fprintf(stderr, "Failed to bind signal\n");
+	// 		err = -EINVAL;
+	// 		goto fail;
+	// 	}
+	// }
 
 	// if((err = -getaddrinfo(listen_address, port, NULL, &addr_list))) {
 	// 	fprintf(stderr, "Failed to resolve listen address '%s', %d => %s\n", listen_address, err, gai_strerror(-err));

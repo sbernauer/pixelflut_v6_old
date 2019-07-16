@@ -32,9 +32,6 @@
 #include "llist.h"
 #include "util.h"
 
-#define CHECK_INTERVAL 1000  /* 100ms */
-#define MAX_REPEAT_TIMES 90  /* 9s (90 * 100ms) in total */
-
 #define RX_BURST_SIZE 2048
 
 static volatile int force_quit;
@@ -62,23 +59,6 @@ static void signal_handler(int signum) {
 				signum);
 		force_quit = 1;
 	}
-}
-
-static void assert_link_status(void) {
-	struct rte_eth_link link;
-	uint8_t rep_cnt = MAX_REPEAT_TIMES;
-
-	memset(&link, 0, sizeof(link));
-	do {
-		rte_eth_link_get(port_id, &link);
-		if (link.link_status == ETH_LINK_UP)
-			break;
-		printf(":: [WARNING] Link was'nt up for port: %d, retrying %d times left\n", port_id, rep_cnt);
-		rte_delay_ms(CHECK_INTERVAL);
-	} while (--rep_cnt);
-
-	if (link.link_status == ETH_LINK_DOWN)
-		rte_exit(EXIT_FAILURE, ":: error: link is still down\n");
 }
 
 static void init_port(void) {
@@ -176,7 +156,6 @@ static void init_port(void) {
 
 void *dpdk_thread(void *fb) {
 
-	int port = 0; // TODO
 	struct rte_mbuf *mbufs[RX_BURST_SIZE];
 	struct ether_hdr *eth_hdr;
 	struct ipv4_hdr *ipv4_hdr;
@@ -188,12 +167,6 @@ void *dpdk_thread(void *fb) {
 	uint32_t rgb;
 
 	while (!force_quit) {
-		struct rte_eth_stats eth_stats;
-		RTE_ETH_FOREACH_DEV(i) {
-			rte_eth_stats_get(i, &eth_stats);
-			printf("Total number of packets received %llu, dropped rx full %llu and rest= %llu, %llu, %llu\n", eth_stats.ipackets, eth_stats.imissed, eth_stats.ierrors, eth_stats.rx_nombuf, eth_stats.q_ipackets[0]);
-		}
-
 		for (i = 0; i < nr_queues; i++) {
 			nb_rx = rte_eth_rx_burst(port_id, i, mbufs, RX_BURST_SIZE);
 			if (nb_rx) {
@@ -209,12 +182,12 @@ void *dpdk_thread(void *fb) {
 						// printf("Found IPv6: ");
 						ipv6_hdr = rte_pktmbuf_mtod_offset(m, struct ipv6_hdr *, sizeof(struct ether_hdr));
 
-						if (ipv6_hdr->proto == 58) { // ICMP6
+						// if (ipv6_hdr->proto == 58) { // ICMP6
 							//int icmp_type = *(&m + (sizeof(struct ether_hdr)));
-							uint8_t *icmp_type = rte_pktmbuf_mtod_offset(m, uint8_t*, sizeof(struct ether_hdr) + sizeof(struct ipv6_hdr));
+							// uint8_t *icmp_type = rte_pktmbuf_mtod_offset(m, uint8_t*, sizeof(struct ether_hdr) + sizeof(struct ipv6_hdr));
 							// printf("Detected ICMP6 (Type: %u)", *icmp_type);
 							// TODO Reply to ICMP6
-						}
+						// }
 						// Continuing without any restriction, client can send whatever type he wants
 
 						uint8_t *dst = ipv6_hdr->dst_addr;
@@ -226,7 +199,6 @@ void *dpdk_thread(void *fb) {
 						rgb = (dst[12] << 24) + (dst[13] << 16) + (dst[14] << 8);
 						//printf(" --- x: %d y: %d rgb: %08x ---\n", x, y, rgb);
 						fb_set_pixel(fb, x, y, rgb);
-
 
 					} else if (eth_hdr->ether_type == rte_be_to_cpu_16(ETHER_TYPE_IPv4)) {
 						// printf("Found IPv4: ");
@@ -244,17 +216,22 @@ void *dpdk_thread(void *fb) {
 	}
 
 
+	struct rte_eth_stats eth_stats;
+	RTE_ETH_FOREACH_DEV(i) {
+		rte_eth_stats_get(i, &eth_stats);
+		printf("Total number of packets received %lu, dropped rx full %lu and rest= %lu, %lu, %lu\n", eth_stats.ipackets, eth_stats.imissed, eth_stats.ierrors, eth_stats.rx_nombuf, eth_stats.q_ipackets[0]);
+	}
+
 
 	/* closing and releasing resources */
-	// rte_flow_flush(port_id, &error);
-	// rte_eth_dev_stop(port_id);
-	// rte_eth_dev_close(port_id);
+	rte_flow_flush(port_id, &error);
+	rte_eth_dev_stop(port_id);
+	rte_eth_dev_close(port_id);
 
 	return NULL;
 }
 
 int net_listen(char** argv, struct fb* fb) {
-
 	int ret;
 	uint16_t nr_ports;
 
@@ -263,8 +240,8 @@ int net_listen(char** argv, struct fb* fb) {
 		rte_exit(EXIT_FAILURE, ":: invalid EAL arguments\n");
 
 	force_quit = 0;
-	// signal(SIGINT, signal_handler);
-	// signal(SIGTERM, signal_handler);
+	signal(SIGINT, signal_handler);
+	signal(SIGTERM, signal_handler);
 
 	nr_ports = rte_eth_dev_count_avail();
 	if (nr_ports == 0)
@@ -290,8 +267,6 @@ int net_listen(char** argv, struct fb* fb) {
 		return -1;
 	}
 	printf("Created dpdk thread.\n");
-
-	return 0;
 
 	return 0;
 }

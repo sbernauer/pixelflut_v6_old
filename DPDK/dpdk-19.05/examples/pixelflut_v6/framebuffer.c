@@ -64,9 +64,9 @@ void fb_free_all(struct llist* fbs) {
 	}
 }
 
-void fb_set_pixel(struct fb* fb, unsigned int x, unsigned int y, uint32_t pixel) {
+inline void fb_set_pixel(struct fb* fb, unsigned int x, unsigned int y, uint32_t pixel) {
 	if (unlikely(x >= fb->size.width) || unlikely(y >= fb->size.height)) {
-		printf("Dropping invalid command with x: %d y: %d\n", x, y);
+		//printf("Dropping invalid command with x: %d y: %d\n", x, y);
 		return;
 	}
 
