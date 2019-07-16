@@ -140,12 +140,17 @@ static  __attribute__((noreturn)) void lcore_main()
     //struct rte_mbuf *m_head = rte_pktmbuf_alloc(mbuf_pool);
     struct rte_mbuf *m_head[BURST_SIZE];
 
+    srand(time(NULL));
+    int x = 100;
+    int y = 100;
+    uint32_t rgb = rand();
+
     for (;;) {
-  //   	struct rte_eth_stats eth_stats;
-		// RTE_ETH_FOREACH_DEV(i) {
-		// 	rte_eth_stats_get(i, &eth_stats);
-		// 	printf("Total number of packets send %lu, received %lu, dropped rx full %lu and rest= %lu, %lu, %lu\n", eth_stats.opackets, eth_stats.ipackets, eth_stats.imissed, eth_stats.ierrors, eth_stats.rx_nombuf, eth_stats.q_ipackets[0]);
-		// }
+		struct rte_eth_stats eth_stats;
+		RTE_ETH_FOREACH_DEV(i) {
+			rte_eth_stats_get(i, &eth_stats);
+			printf("Total number of packets send %lu packets (%lu bytes), received %lu packets (%lu bytes), dropped rx %lu and rest= %lu, %lu, %lu\n", eth_stats.opackets, eth_stats.obytes, eth_stats.ipackets, eth_stats.ibytes, eth_stats.imissed, eth_stats.ierrors, eth_stats.rx_nombuf, eth_stats.q_ipackets[0]);
+		}
 
         RTE_ETH_FOREACH_DEV(port) {             
             if(rte_pktmbuf_alloc_bulk(mbuf_pool, m_head, BURST_SIZE)!=0)
@@ -173,18 +178,29 @@ static  __attribute__((noreturn)) void lcore_main()
                 ipv6_hdr->dst_addr[7] = 0;
 
                 // X Coordinate
-                ipv6_hdr->dst_addr[8] = 0;
-                ipv6_hdr->dst_addr[9] = 10;
+                ipv6_hdr->dst_addr[8] = x >> 8;
+                ipv6_hdr->dst_addr[9] = x;
 
-				// Y Coordinate
-                ipv6_hdr->dst_addr[10] = 0;
-                ipv6_hdr->dst_addr[11] = 10;
+                // Y Coordinate
+                ipv6_hdr->dst_addr[10] = y >> 8;
+                ipv6_hdr->dst_addr[11] = y;
 
                 // Color in rgb
-                ipv6_hdr->dst_addr[12] = 0xff;
-                ipv6_hdr->dst_addr[13] = 0xcc;
-                ipv6_hdr->dst_addr[14] = 0x99;
-                ipv6_hdr->dst_addr[15] = 0x00;
+                ipv6_hdr->dst_addr[12] = rgb >> 24;
+                ipv6_hdr->dst_addr[13] = rgb >> 16;
+                ipv6_hdr->dst_addr[14] = rgb >> 8;
+                ipv6_hdr->dst_addr[15] = 0;
+
+                x++;
+                if (x > 900) {
+                    x = 100;
+                    y++;
+                    if (y > 700) {
+                        y = 100;
+                        srand(time(NULL));
+                        rgb = rand();
+                    }
+                }
             }
             const uint16_t nb_tx = rte_eth_tx_burst(port, 0, m_head, BURST_SIZE);
             if (unlikely(nb_tx < BURST_SIZE)) {
