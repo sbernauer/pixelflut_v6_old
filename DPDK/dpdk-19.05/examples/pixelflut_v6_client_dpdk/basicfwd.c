@@ -114,12 +114,12 @@ static  __attribute__((noreturn)) void lcore_main()
     daddr.addr_bytes[3] = 0xc0;
     daddr.addr_bytes[4] = 0x37;
     daddr.addr_bytes[5] = 0xba;
-    daddr.addr_bytes[0] = 0xff;
-    daddr.addr_bytes[1] = 0xff;
-    daddr.addr_bytes[2] = 0xff;
-    daddr.addr_bytes[3] = 0xff;
-    daddr.addr_bytes[4] = 0xff;
-    daddr.addr_bytes[5] = 0xff;
+    // daddr.addr_bytes[0] = 0xff;
+    // daddr.addr_bytes[1] = 0xff;
+    // daddr.addr_bytes[2] = 0xff;
+    // daddr.addr_bytes[3] = 0xff;
+    // daddr.addr_bytes[4] = 0xff;
+    // daddr.addr_bytes[5] = 0xff;
 
     struct ether_addr saddr;
     saddr.addr_bytes[0] = 0x28;
@@ -128,15 +128,13 @@ static  __attribute__((noreturn)) void lcore_main()
     saddr.addr_bytes[3] = 0x26;
     saddr.addr_bytes[4] = 0x3d;
     saddr.addr_bytes[5] = 0xc7;
-    saddr.addr_bytes[0] = 0;
-    saddr.addr_bytes[1] = 0;
-    saddr.addr_bytes[2] = 0;
-    saddr.addr_bytes[3] = 0;
-    saddr.addr_bytes[4] = 0;
-    saddr.addr_bytes[5] = 0;
+    // saddr.addr_bytes[0] = 0;
+    // saddr.addr_bytes[1] = 0;
+    // saddr.addr_bytes[2] = 0;
+    // saddr.addr_bytes[3] = 0;
+    // saddr.addr_bytes[4] = 0;
+    // saddr.addr_bytes[5] = 0;
 
-    //rte_eth_macaddr_get(portid, &addr);
-    struct ipv4_hdr *ipv4_hdr;
     int32_t i;
     int ret;
     RTE_ETH_FOREACH_DEV(port)
@@ -153,11 +151,11 @@ static  __attribute__((noreturn)) void lcore_main()
     struct rte_mbuf *m_head[BURST_SIZE];
 
     for (;;) {
-    	struct rte_eth_stats eth_stats;
-		RTE_ETH_FOREACH_DEV(i) {
-			rte_eth_stats_get(i, &eth_stats);
-			printf("Total number of packets send %lu, received %lu, dropped rx full %lu and rest= %lu, %lu, %lu\n", eth_stats.opackets, eth_stats.ipackets, eth_stats.imissed, eth_stats.ierrors, eth_stats.rx_nombuf, eth_stats.q_ipackets[0]);
-		}
+  //   	struct rte_eth_stats eth_stats;
+		// RTE_ETH_FOREACH_DEV(i) {
+		// 	rte_eth_stats_get(i, &eth_stats);
+		// 	printf("Total number of packets send %lu, received %lu, dropped rx full %lu and rest= %lu, %lu, %lu\n", eth_stats.opackets, eth_stats.ipackets, eth_stats.imissed, eth_stats.ierrors, eth_stats.rx_nombuf, eth_stats.q_ipackets[0]);
+		// }
 
         RTE_ETH_FOREACH_DEV(port) {             
             if(rte_pktmbuf_alloc_bulk(mbuf_pool, m_head, BURST_SIZE)!=0)
@@ -166,10 +164,11 @@ static  __attribute__((noreturn)) void lcore_main()
             }
             for(i  = 0; i < BURST_SIZE; i++) {
                 //eth_hdr = rte_pktmbuf_mtod(m_head[i], struct ether_hdr *);
-                eth_hdr = (struct ether_hdr *)rte_pktmbuf_append(m_head[i], sizeof(struct ether_hdr));
-                eth_hdr->ether_type = htons(ETHER_TYPE_IPv4);
+                eth_hdr = (struct ether_hdr *)rte_pktmbuf_append(m_head[i], sizeof(struct ether_hdr) + sizeof(struct ipv6_hdr));
+                eth_hdr->ether_type = htons(ETHER_TYPE_IPv6);
                 rte_memcpy(&(eth_hdr->s_addr), &saddr, sizeof(struct ether_addr));
                 rte_memcpy(&(eth_hdr->d_addr), &daddr, sizeof(struct ether_addr));
+
             }
             const uint16_t nb_tx = rte_eth_tx_burst(port, 0, m_head, BURST_SIZE);
             if (unlikely(nb_tx < BURST_SIZE)) {
